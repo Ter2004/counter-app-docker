@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # 1. Frontend & Proxy (Nginx)
+  nginx:
+    image: nginx:stable-bullseye
+    ports:
+      - "80:80"
+    volumes:
+      - ./html:/usr/share/nginx/html             # แชร์หน้าเว็บ
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf # แชร์ Config
+    depends_on:
+      - backend
+
+  # 2. Backend (ใช้ Image จาก Docker Hub ของคุณ)
+  backend:
+    # -------------------------------------------------------
+    # ✅ ส่วนสำคัญ: ใช้ Image บน Cloud แทนการ Build เอง
+    image: ter2004/counter-backend:v1
+    # -------------------------------------------------------
+    expose:
+      - "8000"
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=secret
+      - DB_NAME=counter_db
+    depends_on:
+      - db
+    restart: always
+
+  # 3. Database (MySQL)
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: counter_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql # เก็บข้อมูลถาวร
+    restart: always
+
+volumes:
+  mysql_data:

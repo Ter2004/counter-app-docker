@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker Counter App</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; margin-top: 50px; }
+        .counter { font-size: 80px; font-weight: bold; color: #d32f2f; margin: 20px 0; }
+        button { padding: 15px 30px; font-size: 20px; cursor: pointer; background-color: #1976d2; color: white; border: none; border-radius: 5px; }
+        button:hover { background-color: #1565c0; }
+    </style>
+</head>
+<body>
+
+    <h1>Docker Counter with MySQL</h1>
+    
+    <div id="counter-value" class="counter">Loading...</div>
+    
+    <button onclick="incrementCounter()">Click Me !</button>
+
+    <script>
+        const API_URL = '/api/count'; // เรียกผ่าน Nginx
+
+        // ฟังก์ชันดึงค่าปัจจุบัน
+        async function getCounter() {
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                document.getElementById('counter-value').innerText = data.value;
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // ฟังก์ชันกดปุ่มเพิ่มค่า
+        async function incrementCounter() {
+            try {
+                const response = await fetch(API_URL, { method: 'POST' });
+                const data = await response.json();
+                document.getElementById('counter-value').innerText = data.value;
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // เรียกทำงานตอนโหลดหน้าเว็บ
+        getCounter();
+    </script>
+</body>
+</html>
