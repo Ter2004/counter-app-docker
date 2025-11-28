@@ -9,18 +9,43 @@
         .counter { font-size: 80px; font-weight: bold; color: #d32f2f; margin: 20px 0; }
         button { padding: 15px 30px; font-size: 20px; cursor: pointer; background-color: #1976d2; color: white; border: none; border-radius: 5px; }
         button:hover { background-color: #1565c0; }
+
+        /* --- สไตล์สำหรับตาราง History --- */
+        .history-container { margin-top: 40px; }
+        table { margin: 20px auto; border-collapse: collapse; width: 60%; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        th { background-color: #f4f4f4; color: #333; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        h2 { color: #555; }
     </style>
 </head>
 <body>
 
-    <h1>Docker Counter with MySQL</h1>
+    <h1>Docker Counter with MySQL + RabbitMQ</h1>
     
     <div id="counter-value" class="counter">Loading...</div>
     
     <button onclick="incrementCounter()">Click Me !</button>
 
+    <div class="history-container">
+        <h2>History Log (Last 10 Actions)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Event Type</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody id="history-table">
+                <tr><td colspan="3">Loading history...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
     <script>
-        const API_URL = '/api/count'; // เรียกผ่าน Nginx
+        const API_URL = '/api/count';   // ไปหา Backend
+        const HISTORY_URL = '/history'; // ไปหา History Service
 
         // ฟังก์ชันดึงค่าปัจจุบัน
         async function getCounter() {
@@ -33,12 +58,45 @@
             }
         }
 
+        // ✅ ฟังก์ชันดึงประวัติ (เพิ่มใหม่)
+        async function loadHistory() {
+            try {
+                const response = await fetch(HISTORY_URL);
+                const data = await response.json();
+                
+                const tableBody = document.getElementById('history-table');
+                tableBody.innerHTML = ''; // ล้างข้อมูลเก่า
+
+                if (data.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="3">No history yet</td></tr>';
+                    return;
+                }
+
+                // วนลูปสร้างแถวตาราง
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row.timestamp}</td>
+                        <td>${row.event_type}</td>
+                        <td>${row.value}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
         // ฟังก์ชันกดปุ่มเพิ่มค่า
         async function incrementCounter() {
             try {
                 const response = await fetch(API_URL, { method: 'POST' });
                 const data = await response.json();
                 document.getElementById('counter-value').innerText = data.value;
+
+                // ✅ สั่งโหลดตารางใหม่ (รอ 500ms ให้ RabbitMQ ทำงานทัน)
+                setTimeout(loadHistory, 500);
+
             } catch (error) {
                 console.error('Error:', error);
             }
@@ -46,6 +104,7 @@
 
         // เรียกทำงานตอนโหลดหน้าเว็บ
         getCounter();
+        loadHistory(); // ✅ โหลดประวัติทันทีที่เข้าเว็บ
     </script>
 </body>
 </html>

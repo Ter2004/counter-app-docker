@@ -11,15 +11,15 @@ services:
     depends_on:
       - frontend
       - backend
+      - history
 
-  # 2. Frontend (ดึงจาก Cloud)
+  # 2. Frontend
   frontend:
     image: ter2004/counter-frontend:v1
-    # ไม่ต้องเปิด Ports เพราะคุยกันเองในวง
 
-  # 3. Backend (ดึงจาก Cloud)
+  # 3. Backend
   backend:
-    image: ter2004/counter-backend:v1
+    build: ./backend
     expose:
       - "8000"
     environment:
@@ -29,19 +29,21 @@ services:
       - DB_NAME=counter_db
       - PLUGIN_HOST=plugin
       - PLUGIN_PORT=50051
+      - RABBIT_HOST=rabbitmq
     depends_on:
       - db
       - plugin
+      - rabbitmq
     restart: always
 
-  # 4. Plugin (*** พระเอกของเรา เลือก P1 หรือ P2 ตรงนี้ ***)
+  # 4. Plugin
   plugin:
-    image: ter2004/counter-plugin:P2  # <--- เริ่มที่ P1 ก่อน (บวก 2)
+    image: ter2004/counter-plugin:P2
     expose:
       - "50051"
     restart: always
 
-  # 5. Database
+  # 5. Database (✅ เพิ่ม ports: 3306 แล้ว)
   db:
     image: mysql:8.0
     environment:
@@ -49,6 +51,35 @@ services:
       MYSQL_DATABASE: counter_db
     volumes:
       - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"   # <--- บรรทัดนี้สำคัญครับ ทำให้ Workbench เข้าได้
+    restart: always
+
+  # 6. RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    restart: always
+
+  # 7. History Service
+  history:
+    build: ./history
+    expose:
+      - "8001"
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=secret
+      - DB_NAME=counter_db
+      - RABBIT_HOST=rabbitmq
+    depends_on:
+      - db
+      - rabbitmq
     restart: always
 
 volumes:
