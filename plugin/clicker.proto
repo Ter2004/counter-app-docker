@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+message ClickRequest {
+  int32 current_value = 1;
+}
+
+message ClickReply {
+  int32 new_value = 1;
+}
+
+service ClickerService {
+  rpc Calculate (ClickRequest) returns (ClickReply) {}
+}

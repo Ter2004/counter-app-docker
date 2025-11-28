@@ -1,0 +1,11 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Docker
+.venv
+.env
