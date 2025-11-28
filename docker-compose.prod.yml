@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # 1. Gateway (ตัวเข้างานหลัก Port 80)
+  gateway:
+    image: nginx:stable-bullseye
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx_gateway.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - frontend
+      - backend
+
+  # 2. Frontend (ดึงจาก Cloud)
+  frontend:
+    image: ter2004/counter-frontend:v1
+    # ไม่ต้องเปิด Ports เพราะคุยกันเองในวง
+
+  # 3. Backend (ดึงจาก Cloud)
+  backend:
+    image: ter2004/counter-backend:v1
+    expose:
+      - "8000"
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=secret
+      - DB_NAME=counter_db
+      - PLUGIN_HOST=plugin
+      - PLUGIN_PORT=50051
+    depends_on:
+      - db
+      - plugin
+    restart: always
+
+  # 4. Plugin (*** พระเอกของเรา เลือก P1 หรือ P2 ตรงนี้ ***)
+  plugin:
+    image: ter2004/counter-plugin:P2  # <--- เริ่มที่ P1 ก่อน (บวก 2)
+    expose:
+      - "50051"
+    restart: always
+
+  # 5. Database
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: counter_db
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: always
+
+volumes:
+  mysql_data:

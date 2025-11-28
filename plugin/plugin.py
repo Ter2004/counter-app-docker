@@ -7,7 +7,7 @@ class ClickerService(clicker_pb2_grpc.ClickerServiceServicer):
     def Calculate(self, request, context):
         old_val = request.current_value
         # --- Logic: เปลี่ยนจาก +1 เป็น +2 ตรงนี้ ---
-        new_val = old_val + 2
+        new_val = old_val * 2
         print(f"Plugin received: {old_val} -> responding: {new_val}")
         return clicker_pb2.ClickReply(new_value=new_val)
 
